@@ -1,0 +1,37 @@
+spring:
+  datasource:
+    driver-class-name: org.sqlite.JDBC
+    url: jdbc:sqlite:database.db
+  mail:
+    protocol: smtp
+    host: xxxx
+    port: xxx
+    username: xxxxx@xx.com
+    password: xxxxx
+    test-connection: false
+    properties:
+      mail:
+        smtp:
+          auth: false
+          debug: false
+          mime:
+            splitlongparameters: false
+    default-encoding: UTF-8
+  application:
+    name: host-monitor
+  thymeleaf:
+    # 关闭缓存
+    cache: false
+
+mybatis-plus:
+  mapper-locations: classpath:/mapper/**/*.xml
+  configuration:
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+  # 配置主键自增
+  global-config:
+    db-config:
+      id-type: auto
+
+hm:
+  manager:
+    mail: xxxxx

@@ -1,0 +1,78 @@
+<!--/*-->
+    设备和日志模板
+<!--*/-->
+
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>设备和日志</title>
+    <style>
+        /* 表格样式 */
+        .center {
+            text-align: center;
+            margin: auto;
+        }
+
+        table {
+            border-collapse: collapse;
+            width: 80%;
+            margin: auto;
+        }
+
+        table, th, td {
+            border: 1px solid black;
+            text-align: center;
+            padding: 8px;
+        }
+
+        /* 表头样式 */
+        th {
+            background-color: #f2f2f2;
+            text-align: center;
+        }
+
+        /* 行交替背景色 */
+        tr:nth-child(even) {
+            background-color: #f2f2f2;
+        }
+    </style>
+</head>
+<body>
+<div class="center">
+    <h1>设备列表</h1>
+    <table border="1">
+        <tr>
+            <th>ID</th>
+            <th>类型</th>
+            <th>名称</th>
+            <th>IP 地址</th>
+            <th>当前状态</th>
+        </tr>
+        <tr th:each="device : ${devices}">
+            <td th:text="${device.id}"></td>
+            <td th:text="${device.deviceType}"></td>
+            <td th:text="${device.deviceName}"></td>
+            <td th:text="${device.ipAddress}"></td>
+            <td th:text="${device.status == 0 ? '在线' : '离线'}"></td>
+        </tr>
+    </table>
+
+    <h1>设备日志列表</h1>
+    <table border="1">
+        <tr>
+            <th>ID</th>
+            <th>设备ID</th>
+            <th>状态</th>
+            <th>时间</th>
+        </tr>
+        <tr th:each="log : ${logs}">
+            <td th:text="${log.id}"></td>
+            <td th:text="${log.deviceId}"></td>
+            <td th:text="${log.status == 0 ? '上线' : '下线'}"></td>
+            <td th:text="${log.timestamp}"></td>
+        </tr>
+    </table>
+</div>
+</body>
+</html>

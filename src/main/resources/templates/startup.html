@@ -1,0 +1,26 @@
+<!--/*-->
+    项目启动邮件模板
+<!--*/-->
+
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>项目启动通知</title>
+</head>
+<body>
+<h1>项目已成功启动！</h1>
+<p>尊敬的管理员，</p>
+<p>我们很高兴地通知您，项目已经成功启动并正在运行。</p>
+<p>以下是项目的一些基本信息：</p>
+<ul>
+    <li><strong>项目名称：</strong><span th:text="${name}"></span></li>
+    <li><strong>启动时间：</strong><span th:text="${startupTime}"></span></li>
+    <li><strong>JAVA版本：</strong><span th:text="${javaVersion}"></span></li>
+    <li><strong>JAVA供应商：</strong><span th:text="${javaVendor}"></span></li>
+</ul>
+<p>请确保项目正常运行并监控其状态。如果您遇到任何问题，请随时与我们联系。</p>
+<p>感谢您的关注和支持！</p>
+<p>祝好，<br>项目团队</p>
+</body>
+</html>

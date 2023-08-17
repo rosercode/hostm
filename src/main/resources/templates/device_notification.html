@@ -1,0 +1,27 @@
+<!--/*-->
+    设备通知模板
+<!--*/-->
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>设备通知</title>
+</head>
+<body>
+<h1 th:text="${status == 0 ? '设备上线通知' : '设备下线通知'}"></h1>
+
+<p>尊敬的用户，</p>
+<p th:text="${status == 0 ? '我们很高兴地通知您一个好消息' : '我们需要通知您一个重要的消息'}"></p>
+<p th:text="${status == 0 ? '您的设备已经成功上线并运行正常' : '您的设备已经下线'}"></p>
+<p>以下是有关设备的一些信息：</p>
+<ul>
+    <li><strong>设备名称：</strong><span th:text="${deviceName}"></span></li>
+    <li><strong>时间：</strong><span th:text="${startupTime}"></span></li>
+    <li><strong>设备IP：</strong><span th:text="${deviceLocation}"></span></li>
+    <li><strong>设备类型：</strong><span th:text="${deviceType}"></span></li>
+</ul>
+<p th:text="${status == 0 ? '如果您需要进一步的帮助或有任何疑问，请随时与我们联系。' : '我们正在努力解决问题并将设备尽快重新上线。请您耐心等待。'}"></p>
+<p>感谢您的支持！</p>
+<p>祝好，<br>技术支持团队</p>
+</body>
+</html>
