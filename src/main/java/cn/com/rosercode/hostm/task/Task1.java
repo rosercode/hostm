@@ -81,7 +81,7 @@ public class Task1 {
                 // 利用 Thymeleaf 模板构建 html 文本
                 Context ctx = new Context();
                 // 给模板的参数的上下文
-                ctx.setVariable("status", device.getStatus() == 0 ? 1 : 0);
+                ctx.setVariable("status", device.getStatus());
                 ctx.setVariable("startupTime", now.format(formatter));
                 ctx.setVariable("deviceName", device.getDeviceName());
                 ctx.setVariable("deviceLocation", device.getIpAddress());
