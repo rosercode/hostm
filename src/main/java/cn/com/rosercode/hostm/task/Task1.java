@@ -2,11 +2,11 @@ package cn.com.rosercode.hostm.task;
 
 
 import cn.com.rosercode.hostm.component.IMailSender;
-import cn.com.rosercode.hostm.mapper.DeviceStatusLogMapper;
-import cn.com.rosercode.hostm.mapper.DevicesMapper;
 import cn.com.rosercode.hostm.model.Device;
 import cn.com.rosercode.hostm.model.DeviceStatusLog;
 import cn.com.rosercode.hostm.model.EmailLog;
+import cn.com.rosercode.hostm.service.DeviceStatusLogService;
+import cn.com.rosercode.hostm.service.DevicesService;
 import cn.com.rosercode.hostm.service.EmailLogService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -38,10 +38,10 @@ public class Task1 {
     private IMailSender iMailSender;
 
     @Resource
-    private DeviceStatusLogMapper deviceStatusLogMapper;
+    private DeviceStatusLogService deviceStatusLogService;
 
     @Resource
-    private DevicesMapper devicesMapper;
+    private DevicesService devicesService;
 
 
     @Value("${hm.manager.mail}")
@@ -56,51 +56,58 @@ public class Task1 {
 
     @Scheduled(cron = "*/10 * * * * ?")
     public void sayWord() {
-        for (Device device : devicesMapper.selectList(null)) {
-            DeviceStatusLog deviceStatusLog = new DeviceStatusLog();
-            // 设备是否可达
-            boolean isDeviceReachable = isReachable(device.getIpAddress());
-            // 设备是否新上线（先前状态是不在线）
-            boolean isOffline = isDeviceReachable && device.getStatus() == 1;
-            // 设备新下线（先前状态是在线）
-            boolean isOnline = !isDeviceReachable && device.getStatus() == 0;
-            // 判断是否需要记录日志
-            if (isOffline || isOnline) {
-                // 1、记录日志和设置新的状态
-                deviceStatusLog.setDeviceId(device.getId());
-                deviceStatusLog.setStatus(isDeviceReachable ? 0 : 1);
-                deviceStatusLog.setTimestamp(new Timestamp(System.currentTimeMillis()));
-                deviceStatusLogMapper.insert(deviceStatusLog);
-                device.setStatus(device.getStatus() == 1 ? 0 : 1);
-                devicesMapper.updateById(device);
-
-                // 2、发送邮件给管理员
-                LocalDateTime now = LocalDateTime.now();
-                DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-
-                // 利用 Thymeleaf 模板构建 html 文本
-                Context ctx = new Context();
-                // 给模板的参数的上下文
-                ctx.setVariable("status", device.getStatus());
-                ctx.setVariable("startupTime", now.format(formatter));
-                ctx.setVariable("deviceName", device.getDeviceName());
-                ctx.setVariable("deviceLocation", device.getIpAddress());
-                ctx.setVariable("deviceType", device.getDeviceType());
-
-                // 执行模板引擎，执行模板引擎需要传入模板名、上下文对象
-                String emailText = templateEngine.process("device_notification", ctx);
-                String subject = "设备状态变化通知";
-                boolean isSuccess = iMailSender.sendHtmlMail(managerMail, subject, emailText);
-                EmailLog emailLog = new EmailLog(from, managerMail, subject, emailText, new Timestamp(System.currentTimeMillis()), isSuccess ? 1 : 0);
-                emailLogService.save(emailLog);
-
-                if (isSuccess) {
-                    log.info("Email send Successfully.");
-                    break;
-                }
-                log.error("Email send Failed.");
-            }
+        for (Device device : devicesService.list(null)) {
+            handleDeviceStatusChange(device);
         }
         log.info("");
     }
+
+    private void handleDeviceStatusChange(Device device) {
+        // whether device is reachable
+        boolean isDeviceReachable = isReachable(device.getIpAddress());
+        // judge the host's status whether change
+        boolean isOffline = isDeviceReachable && device.getStatus() == 1;
+        boolean isOnline = !isDeviceReachable && device.getStatus() == 0;
+        // judge whether record log and send mail to manger
+        if (isOffline || isOnline) {
+            // 1. record log.
+            Boolean isSuccess = updateDeviceStatusAndLog(device, isDeviceReachable);
+            // 2. send mail to manager.
+            sendStatusChangeEmail(device);
+        }
+    }
+
+    private Boolean updateDeviceStatusAndLog(Device device, boolean isDeviceReachable) {
+        DeviceStatusLog deviceStatusLog = new DeviceStatusLog();
+        deviceStatusLog.setDeviceId(device.getId());
+        deviceStatusLog.setStatus(isDeviceReachable ? 0 : 1);
+        deviceStatusLog.setTimestamp(new Timestamp(System.currentTimeMillis()));
+        deviceStatusLogService.save(deviceStatusLog);
+
+        device.setStatus(isDeviceReachable ? 0 : 1);
+        return devicesService.updateById(device);
+    }
+
+    private void sendStatusChangeEmail(Device device) {
+
+        Context ctx = new Context();
+        ctx.setVariable("status", device.getStatus());
+        ctx.setVariable("startupTime", LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
+        ctx.setVariable("deviceName", device.getDeviceName());
+        ctx.setVariable("deviceLocation", device.getIpAddress());
+        ctx.setVariable("deviceType", device.getDeviceType());
+
+        String emailText = templateEngine.process("device_notification", ctx);
+        String subject = "设备状态变化通知";
+        boolean isSuccess = iMailSender.sendHtmlMail(managerMail, subject, emailText);
+        EmailLog emailLog = new EmailLog(from, managerMail, subject, emailText, new Timestamp(System.currentTimeMillis()), isSuccess ? 1 : 0);
+        emailLogService.save(emailLog);
+
+        if (isSuccess) {
+            log.info("Email send Successfully.");
+        } else {
+            log.error("Email send Failed.");
+        }
+    }
+
 }

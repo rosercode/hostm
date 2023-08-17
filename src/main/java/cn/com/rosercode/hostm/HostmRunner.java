@@ -53,52 +53,64 @@ public class HostmRunner implements ApplicationRunner {
     @Resource
     private EmailLogService emailLogService;
 
+
     @Override
     public void run(ApplicationArguments args) {
         log.info("Start Alter");
-        // 项目启动
+        sendStartupEmail();
+        // init device status
+        initDeviceStatus();
+        log.info("All check finally.");
+    }
 
-        // 1、发送邮件给管理员
+
+    private void sendStartupEmail() {
         log.info("Server start finally, And send e-mail to manger");
-        LocalDateTime now = LocalDateTime.now();
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-        // 利用 Thymeleaf 模板构建 html 文本
+
         Context ctx = new Context();
-        // 给模板的参数的上下文
         ctx.setVariable("name", projectName);
-        ctx.setVariable("startupTime", now.format(formatter));
+        ctx.setVariable("startupTime", LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
         ctx.setVariable("javaVersion", System.getProperty("java.version"));
         ctx.setVariable("javaVendor", System.getProperty("java.vendor"));
 
-        // 执行模板引擎，执行模板引擎需要传入模板名、上下文对象
         String emailText = templateEngine.process("startup", ctx);
         String subject = "项目启动通知";
         boolean isSuccess = iMailSender.sendHtmlMail(managerMail, subject, emailText);
-        if (isSuccess){
-            log.info("email send successfully.");
-        }else {
-            log.error("email send failed.");
+        logEmailResult(isSuccess);
+        saveEmailLog(emailText, subject, isSuccess);
+    }
+
+    private void logEmailResult(boolean isSuccess) {
+        if (isSuccess) {
+            log.info("Email send successfully.");
+        } else {
+            log.error("Email send failed.");
         }
+    }
+
+    private void saveEmailLog(String emailText, String subject, boolean isSuccess) {
         EmailLog emailLog = new EmailLog(from, managerMail, subject, emailText, new Timestamp(System.currentTimeMillis()), isSuccess ? 1 : 0);
         emailLogService.save(emailLog);
+    }
 
-        // 2. 设置所有设备的默认状态
-        log.info("check all device's status whether common with the database record");
-        log.info("if not, update database's record.");
-        for (Device device : devicesMapper.selectList(null)){
-            if (StringUtils.isNotBlank(device.getIpAddress())){
-                boolean isDeviceReachable = isReachable(device.getIpAddress());
-                // 设备是否新上线（先前状态是不在线）
-                boolean isOffline = isDeviceReachable && device.getStatus() == 1;
-                // 设备新下线（先前状态是在线）
-                boolean isOnline = !isDeviceReachable && device.getStatus() == 0;
-                if (isOffline || isOnline) {
-                    device.setStatus(device.getStatus() == 1 ? 0 : 1);
-                    log.info("update device(id:{}) status", device.getId());
-                    devicesMapper.updateById(device);
-                }
+    private void initDeviceStatus() {
+        log.info("Check all device's status whether common with the database record");
+        log.info("If not, update database's record.");
+        for (Device device : devicesMapper.selectList(null)) {
+            updateDeviceIfNeeded(device);
+        }
+    }
+
+    private void updateDeviceIfNeeded(Device device) {
+        if (StringUtils.isNotBlank(device.getIpAddress())) {
+            boolean isDeviceReachable = isReachable(device.getIpAddress());
+            boolean isOffline = isDeviceReachable && device.getStatus() == 1;
+            boolean isOnline = !isDeviceReachable && device.getStatus() == 0;
+            if (isOffline || isOnline) {
+                device.setStatus(device.getStatus() == 1 ? 0 : 1);
+                log.info("Update device(id:{}) status", device.getId());
+                devicesMapper.updateById(device);
             }
         }
-        log.info("All check finally.");
     }
 }

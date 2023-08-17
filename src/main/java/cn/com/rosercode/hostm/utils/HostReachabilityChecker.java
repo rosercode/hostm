@@ -10,45 +10,39 @@ import java.net.InetAddress;
  */
 
 public class HostReachabilityChecker {
-    /**
-     * 判断 ip address 是否可达
-     *
-     * @param ipAddress
-     * @return
-     */
+    private static final int PING_TIMEOUT = 5000;
+    private static final int PING_RETRIES = 4;
+
     public static boolean isReachable(String ipAddress) {
-        // 先调用系统命令来判断主机是否可达
-        if (ping(ipAddress)){
+        if (ping(ipAddress)) {
             return true;
         }
-        int timeoutMillis = 5000;
+
         try {
             InetAddress inetAddress = InetAddress.getByName(ipAddress);
-            return inetAddress.isReachable(timeoutMillis);
-        } catch (Exception e) {
+            return inetAddress.isReachable(PING_TIMEOUT);
+        } catch (IOException e) {
             return false;
         }
     }
 
     public static boolean ping(String ipAddress) {
-
         String os = System.getProperty("os.name").toLowerCase();
         ProcessBuilder processBuilder;
+
         if (os.contains("win")) {
             // Windows
-            processBuilder = new ProcessBuilder("ping", "-n", "4", ipAddress);
+            processBuilder = new ProcessBuilder("ping", "-n", String.valueOf(PING_RETRIES), ipAddress);
         } else {
             // Linux and others
-            processBuilder = new ProcessBuilder("ping", "-c", "4", ipAddress);
+            processBuilder = new ProcessBuilder("ping", "-c", String.valueOf(PING_RETRIES), ipAddress);
         }
+
         try {
             Process process = processBuilder.start();
             int exitCode = process.waitFor();
-            if (exitCode == 0) {
-                return true;
-            } else {
-                return false;
-            }
+
+            return exitCode == 0;
         } catch (IOException | InterruptedException e) {
             return false;
         }
