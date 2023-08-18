@@ -19,6 +19,7 @@ import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
+import static cn.com.rosercode.hostm.task.Task1.repeatCheck;
 import static cn.com.rosercode.hostm.utils.HostReachabilityChecker.isReachable;
 
 /**
@@ -46,6 +47,9 @@ public class HostmRunner implements ApplicationRunner {
 
     @Value("${spring.mail.username}")
     private String from;
+
+    @Value("${hm.manager.repeat}")
+    private Integer repeat;
 
     @Resource
     private DevicesMapper devicesMapper;
@@ -107,6 +111,9 @@ public class HostmRunner implements ApplicationRunner {
             boolean isOffline = isDeviceReachable && device.getStatus() == 1;
             boolean isOnline = !isDeviceReachable && device.getStatus() == 0;
             if (isOffline || isOnline) {
+                if (!repeatCheck(device.getIpAddress(), isDeviceReachable, this.repeat)){
+                    return;
+                }
                 device.setStatus(device.getStatus() == 1 ? 0 : 1);
                 log.info("Update device(id:{}) status", device.getId());
                 devicesMapper.updateById(device);

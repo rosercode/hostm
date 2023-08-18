@@ -51,6 +51,9 @@ public class Task1 {
     @Value("${spring.mail.username}")
     private String from;
 
+    @Value("${hm.manager.repeat}")
+    private Integer repeat;
+
     @Resource
     private EmailLogService emailLogService;
 
@@ -70,6 +73,9 @@ public class Task1 {
         boolean isOnline = !isDeviceReachable && device.getStatus() == 0;
         // judge whether record log and send mail to manger
         if (isOffline || isOnline) {
+            if (!repeatCheck(device.getIpAddress(), isDeviceReachable, this.repeat)) {
+                return;
+            }
             // 1. record log.
             Boolean isSuccess = updateDeviceStatusAndLog(device, isDeviceReachable);
             // 2. send mail to manager.
@@ -108,6 +114,29 @@ public class Task1 {
         } else {
             log.error("Email send Failed.");
         }
+    }
+
+    /**
+     * when the status is changed, repeat check n times.
+     *
+     * @param ipAddress ip address
+     * @param current   whether current device is reachable.
+     * @param count     check count
+     * @return
+     */
+    public static boolean repeatCheck(String ipAddress, Boolean current, Integer count) {
+        for (int i = 0; i < count; i++) {
+            if (current != isReachable(ipAddress)) {
+                try {
+                    Thread.sleep(1 * 1000);
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
+                log.info("repeat {}", i + 1);
+                return false;
+            }
+        }
+        return true;
     }
 
 }

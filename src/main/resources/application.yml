@@ -35,3 +35,4 @@ mybatis-plus:
 hm:
   manager:
     mail: xxxxx
+  repeat: 2
